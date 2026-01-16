@@ -16,6 +16,11 @@
         "url": "https://github.com/Nubaeon"
       },
       "repository": "https://github.com/Nubaeon/breadcrumbs",
+      "source": {
+        "type": "github",
+        "owner": "Nubaeon",
+        "repo": "breadcrumbs"
+      },
       "license": "MIT",
       "keywords": ["context", "memory", "compaction", "git-notes", "session"]
     }
