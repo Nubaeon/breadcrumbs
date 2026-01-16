@@ -13,7 +13,8 @@ cd "${CWD:-$(pwd)}"
 
 # Check if we're in a git repo
 if ! git rev-parse --is-inside-work-tree &>/dev/null; then
-    exit 0  # Silent exit if not a git repo
+    echo "🍞 breadcrumbs: No git repo found - session context unavailable"
+    exit 0
 fi
 
 # Try to read git notes from HEAD

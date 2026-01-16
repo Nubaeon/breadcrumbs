@@ -13,7 +13,7 @@ cd "${CWD:-$(pwd)}"
 
 # Check if we're in a git repo
 if ! git rev-parse --is-inside-work-tree &>/dev/null; then
-    echo '{"ok": false, "reason": "Not a git repository"}'
+    echo "🍞 breadcrumbs: No git repo found - skipping (init with 'git init')"
     exit 0
 fi
 
