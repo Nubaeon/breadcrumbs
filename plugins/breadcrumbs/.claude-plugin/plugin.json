@@ -4,7 +4,7 @@
   "description": "Survive context compacts with git notes. Dead simple session continuity.",
   "author": {
     "name": "Nubaeon",
-    "url": "https://github.com/Nubaeon"
+    "email": "nubaeon@getempirica.com"
   },
   "repository": "https://github.com/Nubaeon/breadcrumbs",
   "homepage": "https://github.com/Nubaeon/breadcrumbs",
