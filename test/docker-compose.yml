@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  breadcrumbs-test:
+    build:
+      context: ..
+      dockerfile: test/Dockerfile
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    stdin_open: true
+    tty: true
+    volumes:
+      # Mount for live plugin development
+      - ../hooks:/home/tester/.claude/plugins/breadcrumbs/hooks:ro
