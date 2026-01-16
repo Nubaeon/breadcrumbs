@@ -1,0 +1,17 @@
+{
+  "name": "Empirica Plugins",
+  "description": "Epistemic tools for Claude Code",
+  "version": "1.0.0",
+  "plugins": [
+    {
+      "name": "breadcrumbs",
+      "version": "0.1.0",
+      "description": "Survive context compacts with git notes. Dead simple session continuity.",
+      "author": "Nubaeon",
+      "repository": "https://github.com/Nubaeon/breadcrumbs",
+      "source": "Nubaeon/breadcrumbs",
+      "license": "MIT",
+      "keywords": ["context", "memory", "compaction", "git-notes", "session"]
+    }
+  ]
+}
