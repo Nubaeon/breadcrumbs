@@ -12,15 +12,22 @@ No database. No external service. Just git.
 ## Install
 
 ```bash
-# Clone to your plugins directory
-git clone https://github.com/Nubaeon/breadcrumbs ~/.claude/plugins/breadcrumbs
+# From Claude Code marketplace (when available)
+claude plugin install breadcrumbs
 
-# Add to your project's .claude/settings.json
-claude config add-plugin ~/.claude/plugins/breadcrumbs
+# Or install from GitHub
+claude plugin install Nubaeon/breadcrumbs
+
+# Or test locally during development
+claude --plugin-dir ./breadcrumbs
 ```
 
-Or manually add to `.claude/settings.json`:
+**Manual install:**
+```bash
+git clone https://github.com/Nubaeon/breadcrumbs ~/.claude/plugins/breadcrumbs
+```
 
+Then add to your `.claude/settings.json`:
 ```json
 {
   "plugins": ["~/.claude/plugins/breadcrumbs"]

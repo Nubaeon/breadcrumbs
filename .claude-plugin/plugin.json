@@ -1,0 +1,21 @@
+{
+  "name": "breadcrumbs",
+  "version": "0.1.0",
+  "description": "Survive context compacts with git notes. Dead simple session continuity.",
+  "author": {
+    "name": "Nubaeon",
+    "url": "https://github.com/Nubaeon"
+  },
+  "repository": "https://github.com/Nubaeon/breadcrumbs",
+  "homepage": "https://github.com/Nubaeon/breadcrumbs",
+  "license": "MIT",
+  "keywords": [
+    "context",
+    "memory",
+    "compaction",
+    "git-notes",
+    "session",
+    "continuity"
+  ],
+  "hooks": "./hooks/hooks.json"
+}
