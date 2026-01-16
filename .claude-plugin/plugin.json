@@ -16,6 +16,5 @@
     "git-notes",
     "session",
     "continuity"
-  ],
-  "hooks": "./hooks/hooks.json"
+  ]
 }
