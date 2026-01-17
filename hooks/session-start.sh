@@ -17,13 +17,13 @@ if ! git rev-parse --is-inside-work-tree &>/dev/null; then
     exit 0
 fi
 
-# Try to read git notes from HEAD
-NOTES=$(git notes show HEAD 2>/dev/null || echo "")
+# Try to read git notes from HEAD (using 'breadcrumbs' namespace)
+NOTES=$(git notes --ref=breadcrumbs show HEAD 2>/dev/null || echo "")
 
 # If no notes on HEAD, check recent commits (in case of new commits since checkpoint)
 if [ -z "$NOTES" ]; then
     for i in 1 2 3 4 5 6 7 8 9 10; do
-        NOTES=$(git notes show HEAD~$i 2>/dev/null || echo "")
+        NOTES=$(git notes --ref=breadcrumbs show HEAD~$i 2>/dev/null || echo "")
         if [ -n "$NOTES" ] && echo "$NOTES" | grep -q "BREADCRUMBS"; then
             break
         fi
