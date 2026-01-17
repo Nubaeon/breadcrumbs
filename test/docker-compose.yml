@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   breadcrumbs-test:
+    container_name: claude-plugin-test   # Named container for easy reference
     build:
       context: ..
       dockerfile: test/Dockerfile
@@ -10,5 +11,11 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      # Mount for live plugin development
-      - ../hooks:/home/tester/.claude/plugins/breadcrumbs/hooks:ro
+      # Persist Claude auth and settings between sessions
+      - claude-data:/home/tester/.claude
+      # Mount plugin source for live development
+      - ..:/home/tester/plugin-source:ro
+
+# Named volume persists across container restarts
+volumes:
+  claude-data:

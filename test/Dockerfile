@@ -33,5 +33,5 @@ RUN mkdir -p /home/tester/test-project && \
 
 WORKDIR /home/tester/test-project
 
-# Entry point - run claude with plugin and skip permissions
-ENTRYPOINT ["claude", "--plugin-dir", "/home/tester/.claude/plugins/breadcrumbs", "--dangerously-skip-permissions"]
+# Start with bash - user controls when to launch claude
+CMD ["bash"]
