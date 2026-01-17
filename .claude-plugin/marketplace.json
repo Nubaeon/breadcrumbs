@@ -11,7 +11,7 @@
     {
       "name": "breadcrumbs",
       "description": "Survive context compacts with git notes. Dead simple session continuity.",
-      "source": "./",
+      "source": "github:Nubaeon/breadcrumbs",
       "category": "productivity",
       "version": "0.1.0",
       "author": {
