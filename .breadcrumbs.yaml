@@ -1,0 +1,33 @@
+# Breadcrumbs Configuration
+# Place this file in your project root to customize what gets saved
+
+# Git context to capture
+git:
+  recent_commits: 5          # Number of recent commits to show
+  modified_files: true       # List modified/staged files
+  current_branch: true       # Show current branch name
+
+# Epistemic state tracking
+# Claude self-reports confidence and uncertainties
+epistemic:
+  enabled: true
+  # Confidence scale (shown to Claude)
+  scale: "1-5 (1=guessing, 3=reasonable confidence, 5=certain)"
+  # Prompt Claude to identify uncertainties
+  track_uncertainties: true
+  # Prompt Claude to note key decisions made
+  track_decisions: true
+
+# Task context
+task:
+  # Extract last task from transcript (max chars)
+  extract_last_task: 500
+  # Include approach/strategy notes
+  include_approach: true
+
+# Custom fields (advanced)
+# custom:
+#   - name: "API Keys Used"
+#     command: "grep -r 'API_KEY' .env 2>/dev/null | wc -l"
+#   - name: "Test Status"
+#     command: "npm test 2>&1 | tail -5"
