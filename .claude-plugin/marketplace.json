@@ -1,0 +1,23 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "breadcrumbs-marketplace",
+  "version": "1.0.0",
+  "description": "Breadcrumbs plugin for Claude Code",
+  "owner": {
+    "name": "Nubaeon",
+    "email": "nubaeon@getempirica.com"
+  },
+  "plugins": [
+    {
+      "name": "breadcrumbs",
+      "description": "Survive context compacts with git notes. Dead simple session continuity.",
+      "source": "./",
+      "category": "productivity",
+      "version": "0.1.0",
+      "author": {
+        "name": "Nubaeon",
+        "email": "nubaeon@getempirica.com"
+      }
+    }
+  ]
+}
