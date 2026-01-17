@@ -1,22 +1,13 @@
 {
+  "description": "breadcrumbs - Survive context compacts with git notes",
   "hooks": {
     "PreCompact": [
       {
-        "matcher": "auto",
+        "matcher": "auto|manual",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.sh\"",
-            "timeout": 30
-          }
-        ]
-      },
-      {
-        "matcher": "manual",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.sh\"",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.sh",
             "timeout": 30
           }
         ]
@@ -24,21 +15,11 @@
     ],
     "SessionStart": [
       {
-        "matcher": "compact",
+        "matcher": "compact|resume",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "resume",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh\"",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh",
             "timeout": 10
           }
         ]
