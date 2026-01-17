@@ -11,7 +11,7 @@
     {
       "name": "breadcrumbs",
       "description": "Survive context compacts with git notes. Dead simple session continuity.",
-      "source": "./plugins/breadcrumbs",
+      "source": ".",
       "category": "productivity",
       "version": "0.1.0",
       "author": {
