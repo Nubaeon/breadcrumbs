@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "breadcrumbs-marketplace",
+  "name": "empirica-plugins",
   "version": "1.0.0",
   "description": "Breadcrumbs plugin for Claude Code",
   "owner": {
