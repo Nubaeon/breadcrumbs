@@ -5,10 +5,19 @@
 
 set -e
 
+# Debug mode (set BREADCRUMBS_DEBUG=1 to enable)
+debug() {
+    [ "${BREADCRUMBS_DEBUG:-0}" = "1" ] && echo "[breadcrumbs] $*" >&2
+    return 0  # Always succeed (don't fail with set -e)
+}
+
 # Read hook input from stdin
 INPUT=$(cat)
 TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // empty')
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
+
+debug "transcript_path=$TRANSCRIPT_PATH"
+debug "cwd=$CWD"
 
 cd "${CWD:-$(pwd)}"
 
@@ -38,7 +47,13 @@ yaml_get_nested() {
     local section="$1"
     local key="$2"
     local file="$3"
-    sed -n "/^${section}:/,/^[a-z]/p" "$file" 2>/dev/null | grep "^[[:space:]]*${key}:" | sed "s/^[[:space:]]*${key}:[[:space:]]*//" | tr -d '"'
+    # Extract value, strip quotes and whitespace
+    sed -n "/^${section}:/,/^[a-z]/p" "$file" 2>/dev/null | \
+        grep "^[[:space:]]*${key}:" | \
+        sed "s/^[[:space:]]*${key}:[[:space:]]*//" | \
+        tr -d '"' | \
+        tr -d "'" | \
+        sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
 }
 
 # Default config values
@@ -52,7 +67,9 @@ TRACK_DECISIONS=true
 TASK_EXTRACT=500
 
 # Load config if exists
+debug "config_file=$CONFIG_FILE"
 if [ -n "$CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
+    debug "Loading config from $CONFIG_FILE"
     GIT_COMMITS=$(yaml_get_nested "git" "recent_commits" "$CONFIG_FILE")
     GIT_COMMITS=${GIT_COMMITS:-5}
 
@@ -63,19 +80,28 @@ if [ -n "$CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
     [ "$val" = "false" ] && GIT_BRANCH=false
 
     val=$(yaml_get_nested "epistemic" "enabled" "$CONFIG_FILE")
-    [ "$val" = "false" ] && EPISTEMIC_ENABLED=false
+    # Only disable if explicitly set to "false" or "no" or "0"
+    case "$val" in
+        false|no|0|False|No|FALSE|NO) EPISTEMIC_ENABLED=false ;;
+    esac
 
     EPISTEMIC_SCALE=$(yaml_get_nested "epistemic" "scale" "$CONFIG_FILE")
     EPISTEMIC_SCALE=${EPISTEMIC_SCALE:-"1-5"}
 
     val=$(yaml_get_nested "epistemic" "track_uncertainties" "$CONFIG_FILE")
-    [ "$val" = "false" ] && TRACK_UNCERTAINTIES=false
+    case "$val" in
+        false|no|0|False|No|FALSE|NO) TRACK_UNCERTAINTIES=false ;;
+    esac
 
     val=$(yaml_get_nested "epistemic" "track_decisions" "$CONFIG_FILE")
-    [ "$val" = "false" ] && TRACK_DECISIONS=false
+    case "$val" in
+        false|no|0|False|No|FALSE|NO) TRACK_DECISIONS=false ;;
+    esac
 
     TASK_EXTRACT=$(yaml_get_nested "task" "extract_last_task" "$CONFIG_FILE")
     TASK_EXTRACT=${TASK_EXTRACT:-500}
+
+    debug "epistemic_enabled=$EPISTEMIC_ENABLED scale=$EPISTEMIC_SCALE"
 fi
 
 # Gather git context
@@ -94,15 +120,39 @@ if [ "$GIT_COMMITS" -gt 0 ] 2>/dev/null; then
     RECENT_COMMITS=$(git log --oneline -"$GIT_COMMITS" 2>/dev/null | sed 's/^/  /')
 fi
 
-# Extract last task from transcript
+# Extract last task from transcript using jq for proper JSON parsing
+# Claude Code transcripts are JSONL format with nested message structure:
+# Human input: {type: "user", message: {role: "user", content: "string"}}
+# Tool result: {type: "user", message: {..., content: [{type: "tool_result", ...}]}}
 LAST_TASK=""
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "$TASK_EXTRACT" -gt 0 ]; then
-    LAST_TASK=$(tail -100 "$TRANSCRIPT_PATH" 2>/dev/null | \
-        grep -o '"role":"human"' -A 200 | \
-        grep -o '"content":\[{"type":"text","text":"[^"]*"' | \
-        tail -1 | \
-        sed 's/.*"text":"//;s/"$//' | \
-        head -c "$TASK_EXTRACT")
+    debug "Extracting last task from: $TRANSCRIPT_PATH"
+    # Read file in reverse, find first user message with actual human text (not tool results)
+    # Human input has content as STRING; tool results have content as ARRAY
+    LAST_TASK=$(tac "$TRANSCRIPT_PATH" 2>/dev/null | while IFS= read -r line; do
+        # Skip empty lines
+        [ -z "$line" ] && continue
+        # Check if this is a user message (outer type field)
+        msg_type=$(echo "$line" | jq -r '.type // empty' 2>/dev/null)
+        if [ "$msg_type" = "user" ]; then
+            # Check if content is a string (human input) vs array (tool result)
+            text=$(echo "$line" | jq -r '
+                if (.message.content | type) == "string" then
+                    .message.content
+                elif (.message.content | type) == "array" then
+                    .message.content[] | select(.type == "text") | .text
+                else
+                    empty
+                end // empty
+            ' 2>/dev/null | head -1)
+            # Skip interrupt messages and empty text
+            if [ -n "$text" ] && [ "$text" != "[Request interrupted by user]" ] && [ "$text" != "[Request interrupted by user for tool use]" ]; then
+                echo "$text"
+                break
+            fi
+        fi
+    done | head -c "$TASK_EXTRACT")
+    debug "Extracted task length: ${#LAST_TASK}"
 fi
 
 # Build the breadcrumb note
@@ -164,8 +214,8 @@ NOTE="$NOTE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Continue from where you left off."
 
-# Save to git notes on HEAD
-git notes add -f -m "$NOTE" HEAD 2>/dev/null || true
+# Save to git notes on HEAD (using 'breadcrumbs' namespace to avoid conflicts)
+git notes --ref=breadcrumbs add -f -m "$NOTE" HEAD 2>/dev/null || true
 
 # Output for Claude's context
 echo '{"ok": true, "message": "Breadcrumbs saved to git notes", "config": "'"${CONFIG_FILE:-default}"'"}'
