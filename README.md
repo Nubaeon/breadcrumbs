@@ -1,4 +1,8 @@
-# 🍞 breadcrumbs v2
+# 🍞 breadcrumbs
+
+<p align="center">
+  <img src="ralph_breadcrumbs.jpg" alt="Ralph Wiggum eating bread, dropping breadcrumbs" width="400">
+</p>
 
 **Survive context compacts. Dead simple.**
 
