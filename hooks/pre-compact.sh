@@ -5,6 +5,10 @@
 
 set -e
 
+# Always log to file for debugging hook execution
+LOG_FILE="/tmp/breadcrumbs-precompact.log"
+echo "$(date -Iseconds) | pwd=$(pwd) | BREADCRUMBS_ROOT=${BREADCRUMBS_ROOT:-unset}" >> "$LOG_FILE"
+
 # Debug mode (set BREADCRUMBS_DEBUG=1 to enable)
 debug() {
     [ "${BREADCRUMBS_DEBUG:-0}" = "1" ] && echo "[breadcrumbs] $*" >&2
@@ -23,9 +27,11 @@ cd "${CWD:-$(pwd)}"
 
 # Check if we're in a git repo
 if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    echo "$(date -Iseconds) | EXIT: No git repo found at $(pwd)" >> "$LOG_FILE"
     echo '{"ok": false, "message": "No git repo found"}'
     exit 0
 fi
+echo "$(date -Iseconds) | Git repo found: $(git rev-parse --show-toplevel)" >> "$LOG_FILE"
 
 # Find config file (check current dir and git root)
 GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
@@ -216,6 +222,7 @@ Continue from where you left off."
 
 # Save to git notes on HEAD (using 'breadcrumbs' namespace to avoid conflicts)
 git notes --ref=breadcrumbs add -f -m "$NOTE" HEAD 2>/dev/null || true
+echo "$(date -Iseconds) | SUCCESS: Git notes written to HEAD=$(git rev-parse HEAD 2>/dev/null || echo 'unknown')" >> "$LOG_FILE"
 
 # Output for Claude's context
 echo '{"ok": true, "message": "Breadcrumbs saved to git notes", "config": "'"${CONFIG_FILE:-default}"'"}'

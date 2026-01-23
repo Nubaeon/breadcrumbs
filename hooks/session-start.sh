@@ -41,18 +41,33 @@ if [ -n "$CONFIG_FILE" ] && grep -q "^calibration:" "$CONFIG_FILE" 2>/dev/null; 
     fi
 fi
 
-# ==================== GIT NOTES (session context) ====================
+# ==================== GIT NOTES (task context from breadcrumbs) ====================
 # Try to read git notes from HEAD (using 'breadcrumbs' namespace)
-NOTES=$(git notes --ref=breadcrumbs show HEAD 2>/dev/null || echo "")
+BREADCRUMBS_NOTES=$(git notes --ref=breadcrumbs show HEAD 2>/dev/null || echo "")
 
 # If no notes on HEAD, check recent commits (in case of new commits since checkpoint)
-if [ -z "$NOTES" ]; then
+if [ -z "$BREADCRUMBS_NOTES" ]; then
     for i in 1 2 3 4 5 6 7 8 9 10; do
-        NOTES=$(git notes --ref=breadcrumbs show HEAD~$i 2>/dev/null || echo "")
-        if [ -n "$NOTES" ] && echo "$NOTES" | grep -q "BREADCRUMBS"; then
+        BREADCRUMBS_NOTES=$(git notes --ref=breadcrumbs show HEAD~$i 2>/dev/null || echo "")
+        if [ -n "$BREADCRUMBS_NOTES" ] && echo "$BREADCRUMBS_NOTES" | grep -q "BREADCRUMBS"; then
             break
         fi
-        NOTES=""
+        BREADCRUMBS_NOTES=""
+    done
+fi
+
+# ==================== GIT NOTES (epistemic state from empirica) ====================
+# Try to read git notes from HEAD (using 'empirica-precompact' namespace)
+EMPIRICA_NOTES=$(git notes --ref=empirica-precompact show HEAD 2>/dev/null || echo "")
+
+# If no notes on HEAD, check recent commits
+if [ -z "$EMPIRICA_NOTES" ]; then
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        EMPIRICA_NOTES=$(git notes --ref=empirica-precompact show HEAD~$i 2>/dev/null || echo "")
+        if [ -n "$EMPIRICA_NOTES" ] && echo "$EMPIRICA_NOTES" | grep -q "EMPIRICA"; then
+            break
+        fi
+        EMPIRICA_NOTES=""
     done
 fi
 
@@ -76,17 +91,30 @@ Apply these bias corrections to your self-assessments.
 EOF
 fi
 
-# Output breadcrumbs if present
-if [ -n "$NOTES" ] && echo "$NOTES" | grep -q "BREADCRUMBS"; then
+# Output breadcrumbs (task context) if present
+if [ -n "$BREADCRUMBS_NOTES" ] && echo "$BREADCRUMBS_NOTES" | grep -q "BREADCRUMBS"; then
     HAS_CONTEXT=true
     cat << 'EOF'
 
 ╔═══════════════════════════════════════════════════════════════════╗
-║  📍 SESSION CONTEXT RESTORED (breadcrumbs from git notes)         ║
+║  📍 TASK CONTEXT (from breadcrumbs git notes)                     ║
 ╚═══════════════════════════════════════════════════════════════════╝
 
 EOF
-    echo "$NOTES"
+    echo "$BREADCRUMBS_NOTES"
+fi
+
+# Output empirica epistemic state if present
+if [ -n "$EMPIRICA_NOTES" ] && echo "$EMPIRICA_NOTES" | grep -q "EMPIRICA"; then
+    HAS_CONTEXT=true
+    cat << 'EOF'
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  🧠 EPISTEMIC STATE (from empirica-precompact git notes)          ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+EOF
+    echo "$EMPIRICA_NOTES"
 fi
 
 # Final prompt if we loaded any context

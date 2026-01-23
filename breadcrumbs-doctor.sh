@@ -145,11 +145,11 @@ if git rev-parse --is-inside-work-tree &>/dev/null; then
         ((WARNINGS++))
     fi
 
-    # Check for existing notes
-    if git notes show HEAD &>/dev/null; then
+    # Check for existing notes (using breadcrumbs namespace)
+    if git notes --ref=breadcrumbs show HEAD &>/dev/null; then
         echo "✅ Git notes on HEAD: present"
         echo "   └─ Preview:"
-        git notes show HEAD | head -5 | sed 's/^/      /'
+        git notes --ref=breadcrumbs show HEAD | head -5 | sed 's/^/      /'
     else
         echo "⚪ Git notes on HEAD: none (will be created on first compact)"
     fi
@@ -177,8 +177,8 @@ if [ $ERRORS -eq 0 ] && git rev-parse --is-inside-work-tree &>/dev/null; then
     if echo "$RESULT" | grep -q '"ok": true'; then
         echo "✅ pre-compact hook: WORKING"
 
-        # Verify notes saved
-        if git notes show HEAD &>/dev/null; then
+        # Verify notes saved (using breadcrumbs namespace)
+        if git notes --ref=breadcrumbs show HEAD &>/dev/null; then
             echo "✅ git notes: saved successfully"
         else
             echo "❌ git notes: save failed despite ok response"

@@ -211,10 +211,10 @@ Ralph Loop Iteration N+1
 3. Prompts for epistemic self-assessment
 
 ### Storage
-- Notes stored in default git notes ref (`refs/notes/commits`)
+- Notes stored in `refs/notes/breadcrumbs` namespace (avoids conflicts)
 - Survives across sessions (persisted in git)
-- Visible with `git notes show HEAD`
-- Pushed with `git push origin refs/notes/*:refs/notes/*`
+- Visible with `git notes --ref=breadcrumbs show HEAD`
+- Pushed with `git push origin refs/notes/breadcrumbs:refs/notes/breadcrumbs`
 
 ---
 
