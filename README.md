@@ -1,184 +1,275 @@
-# 🍞 breadcrumbs
+# 🍞 breadcrumbs v2
 
 **Survive context compacts. Dead simple.**
 
 Before compact: auto-saves session state to git notes
-After compact: auto-loads it back
+After compact: auto-loads it back + prompts for epistemic self-assessment
 
 No database. No external service. Just git.
 
 ---
 
-## Install
+## Why This Exists
 
-**Local installation:**
+Claude Code sessions can run for hours. When context compacts (automatically or via `/compact`), you lose:
+- What you were working on
+- What decisions you made and why
+- What uncertainties remained
+- What you were about to do next
+
+**breadcrumbs** captures this context before compaction and reinjects it on resume.
+
+---
+
+## Quick Install
+
 ```bash
-# Clone to your local plugins directory
+curl -fsSL https://raw.githubusercontent.com/Nubaeon/breadcrumbs/main/install.sh | bash
+```
+
+Or manual:
+```bash
 mkdir -p ~/.claude/plugins/local
 git clone https://github.com/Nubaeon/breadcrumbs ~/.claude/plugins/local/breadcrumbs
 ```
 
-Then add a local marketplace config at `~/.claude/plugins/local/.claude-plugin/marketplace.json`:
-```json
-{
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "local",
-  "description": "Local plugins",
-  "owner": { "name": "Local", "email": "dev@localhost" },
-  "plugins": [{
-    "name": "breadcrumbs",
-    "description": "Survive context compacts with git notes",
-    "version": "0.1.0",
-    "author": { "name": "Nubaeon", "email": "nubaeon@getempirica.com" },
-    "source": "./breadcrumbs",
-    "category": "productivity"
-  }]
-}
-```
+Then add hooks to your project (see Configuration below).
 
 ---
 
-## What It Saves
+## What It Captures
 
-When your context is about to compact, breadcrumbs captures:
+| Context | Description |
+|---------|-------------|
+| **Branch** | Current git branch |
+| **Last task** | Extracted from conversation transcript |
+| **Modified files** | Uncommitted changes (git status) |
+| **Recent commits** | What's been done recently |
+| **PR context** | If working on a PR (requires `gh` CLI) |
+| **Build status** | Detects build artifacts |
+| **In-code TODOs** | Scans for TODO/FIXME comments |
+| **Epistemic prompts** | Confidence, uncertainties, decisions, next steps |
 
-- **Branch** — Where you are in git
-- **Last task** — What you were working on (extracted from transcript)
-- **Modified files** — Uncommitted changes
-- **Recent commits** — What's been done
-- **Epistemic state** — Prompts for confidence assessment
-
-All stored in git notes. No external dependencies.
+All stored in git notes on HEAD. Zero external dependencies beyond git + jq.
 
 ---
 
 ## Configuration
 
-Create `.breadcrumbs.yaml` in your project root to customize:
+### 1. Add Hooks to Project
+
+Add to your project's `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreCompact": [{
+      "matcher": "auto|manual",
+      "hooks": [{
+        "type": "command",
+        "command": "bash ~/.claude/plugins/local/breadcrumbs/hooks/pre-compact.sh",
+        "timeout": 30
+      }]
+    }],
+    "SessionStart": [{
+      "matcher": "compact|resume",
+      "hooks": [{
+        "type": "command",
+        "command": "bash ~/.claude/plugins/local/breadcrumbs/hooks/session-start.sh",
+        "timeout": 10
+      }]
+    }]
+  }
+}
+```
+
+### 2. Customize Capture (Optional)
+
+Create `.breadcrumbs.yaml` in your project root:
 
 ```yaml
-# Git context to capture
+# Git context
 git:
-  recent_commits: 5          # Number of recent commits
-  modified_files: true       # List modified/staged files
-  current_branch: true       # Show current branch
+  recent_commits: 5
+  modified_files: true
+  current_branch: true
 
-# Epistemic state tracking
+# Epistemic tracking
 epistemic:
   enabled: true
   scale: "1-5 (1=guessing, 3=reasonable, 5=certain)"
-  track_uncertainties: true  # Prompt for what's unclear
-  track_decisions: true      # Prompt for key decisions made
+  track_uncertainties: true
+  track_decisions: true
 
-# Task context
+# Task extraction
 task:
-  extract_last_task: 500     # Max chars from transcript
-```
+  extract_last_task: 500  # chars from transcript
 
-Without a config file, sensible defaults are used.
+# v2 features
+build:
+  enabled: true   # Detect build artifacts
+pr:
+  enabled: true   # Show PR context (requires gh CLI)
+todos:
+  enabled: false  # Scan for TODO/FIXME (can be noisy)
+```
 
 ---
 
-## Epistemic Tracking
+## 🔄 Ralph Wiggum Integration
 
-breadcrumbs prompts Claude to self-assess after context restoration:
+**breadcrumbs** pairs perfectly with [ralph-wiggum](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum) for autonomous loops.
+
+### The Problem Ralph Has
+
+Ralph keeps Claude looping until task completion. But during long loops:
+1. Context compacts happen (automatically at ~100k tokens)
+2. Claude loses its *reasoning* about why it made decisions
+3. Files persist, but the mental state doesn't
+
+### The Solution
 
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-EPISTEMIC STATE (self-assess on resume)
-
-Please assess your current epistemic state:
-- CONFIDENCE: Rate 1-5 where you are on understanding this codebase/task
-- UNCERTAINTIES: What are you unsure about? What needs verification?
-- KEY_DECISIONS: What important decisions were made that you should remember?
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ralph Loop Iteration N
+        ↓
+    [working...]
+        ↓
+    Context Compact Triggered
+        ↓
+    🍞 breadcrumbs PreCompact hook saves:
+       - What was being worked on
+       - Uncertainties remaining
+       - Key decisions made
+       - Next planned steps
+        ↓
+    Context Compacted
+        ↓
+    🍞 breadcrumbs SessionStart hook injects saved context
+        ↓
+    Claude resumes with epistemic continuity
+        ↓
+Ralph Loop Iteration N+1
 ```
 
-**Why this matters:** Claude can meaningfully assess its own uncertainty without heavy infrastructure. This proves AI can be trusted to quantify epistemic state when given the right prompts.
+### Combined Setup
+
+```json
+{
+  "hooks": {
+    "PreCompact": [{
+      "matcher": "auto|manual",
+      "hooks": [{
+        "type": "command",
+        "command": "bash ~/.claude/plugins/local/breadcrumbs/hooks/pre-compact.sh",
+        "timeout": 30
+      }]
+    }],
+    "SessionStart": [{
+      "matcher": "compact|resume",
+      "hooks": [{
+        "type": "command",
+        "command": "bash ~/.claude/plugins/local/breadcrumbs/hooks/session-start.sh",
+        "timeout": 10
+      }]
+    }],
+    "Stop": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "bash ~/.claude/plugins/local/ralph-wiggum/hooks/stop-hook.sh"
+      }]
+    }]
+  }
+}
+```
 
 ---
 
-## What It Looks Like
+## Prerequisites
 
-After compaction:
-
-```
-╔═══════════════════════════════════════════════════════════════════╗
-║  📍 SESSION CONTEXT RESTORED (breadcrumbs from git notes)         ║
-╚═══════════════════════════════════════════════════════════════════╝
-
-🍞 BREADCRUMBS - 2026-01-17T12:30:00+00:00
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-BRANCH: feature/auth-flow
-
-LAST_TASK:
-implement the OAuth callback handler
-
-MODIFIED_FILES:
-  M src/auth/callback.ts
-  M src/config.ts
-
-RECENT_COMMITS:
-  abc1234 feat: add OAuth initiation
-  def5678 refactor: extract auth utils
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-EPISTEMIC STATE (self-assess on resume)
-
-Please assess your current epistemic state:
-- CONFIDENCE: Rate 1-5 where you are on understanding this codebase/task
-- UNCERTAINTIES: What are you unsure about? What needs verification?
-- KEY_DECISIONS: What important decisions were made that you should remember?
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Continue from where you left off.
-
-╔═══════════════════════════════════════════════════════════════════╗
-║  ⚡ Context loaded. Assess your epistemic state and continue.     ║
-╚═══════════════════════════════════════════════════════════════════╝
-```
+- **git** - For git notes storage
+- **jq** - For JSON parsing (`apt install jq`)
+- **git user configured** - Required for git notes:
+  ```bash
+  git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"
+  ```
 
 ---
 
 ## How It Works
 
-1. **PreCompact hook** — Before memory compacts, saves state to `git notes`
-2. **SessionStart hook** — On compact/resume, reads `git notes` and injects context
+### PreCompact Hook
+1. Reads session transcript to extract last task
+2. Gathers git context (branch, status, recent commits)
+3. Optionally checks PR context, build status, TODOs
+4. Saves everything to `git notes` on HEAD
 
-Two shell scripts. ~150 lines total. Zero external dependencies beyond git and jq.
+### SessionStart Hook
+1. Reads git notes from HEAD
+2. Displays context in a formatted box
+3. Prompts for epistemic self-assessment
 
----
-
-## For Higher-Stakes Work
-
-breadcrumbs is intentionally minimal. For critical domains (healthcare, finance, safety-critical systems), consider [Empirica](https://github.com/Nubaeon/empirica) — the full epistemic framework with:
-
-- 13-dimensional confidence vectors & calibration
-- Goal tracking with subtasks
-- Dead-end logging (what didn't work)
-- Multi-agent coordination
-- Bayesian belief updating
-- Audit trails
-
-breadcrumbs is the 80/20 solution. Empirica is for when you need the other 20%.
+### Storage
+- Notes stored in `refs/notes/breadcrumbs` namespace (avoids conflicts)
+- Survives across sessions (persisted in git)
+- Visible with `git notes --ref=breadcrumbs show HEAD`
+- Pushed with `git push origin refs/notes/breadcrumbs:refs/notes/breadcrumbs`
 
 ---
 
-## Requirements
+## Troubleshooting
 
-- Claude Code CLI (v2.0.76+ for SessionStart fix)
-- Git repository
-- `jq` installed (for JSON parsing)
+### "Failed to save git notes"
+```bash
+# Check git user is configured
+git config user.email
+git config user.name
+
+# If empty, configure:
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+```
+
+### "jq: command not found"
+```bash
+# Ubuntu/Debian
+apt install jq
+
+# macOS
+brew install jq
+```
+
+### Notes not appearing after compact
+Check hooks are registered:
+```bash
+cat .claude/settings.json | jq '.hooks'
+```
+
+### Verify manually
+```bash
+# Test pre-compact
+echo '{"cwd": "'$(pwd)'"}' | bash ~/.claude/plugins/local/breadcrumbs/hooks/pre-compact.sh
+
+# Check notes
+git notes show HEAD
+
+# Test session-start
+echo '{"trigger": "compact", "cwd": "'$(pwd)'"}' | bash ~/.claude/plugins/local/breadcrumbs/hooks/session-start.sh
+```
 
 ---
 
 ## License
 
-MIT — do whatever you want.
+MIT
 
 ---
 
-<p align="center">
-Part of the <a href="https://github.com/Nubaeon/empirica">Empirica</a> ecosystem.
-</p>
+## Credits
+
+- Built for the [Claude Code](https://github.com/anthropics/claude-code) ecosystem
+- Inspired by epistemic tracking in [Empirica](https://github.com/Nubaeon/empirica)
+- Designed to complement [ralph-wiggum](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum)
+
+**Two shell scripts. ~200 lines. Epistemic continuity.**

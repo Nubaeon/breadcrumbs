@@ -90,10 +90,13 @@ echo ""
 echo "📍 Location: $PLUGIN_DIR"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "NEXT STEPS:"
+echo "HOOKS AUTO-DISCOVERY:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "Add hooks to your project's .claude/settings.json:"
+echo "Hooks are configured via hooks/hooks.json and should"
+echo "auto-discover when Claude Code loads the plugin."
+echo ""
+echo "If hooks don't auto-load, add to ~/.claude/settings.json:"
 echo ""
 cat << 'EOF'
 {
@@ -102,23 +105,19 @@ cat << 'EOF'
       "matcher": "auto|manual",
       "hooks": [{
         "type": "command",
-        "command": "bash ~/.claude/plugins/local/breadcrumbs/hooks/pre-compact.sh",
-        "timeout": 30
+        "command": "bash ~/.claude/plugins/local/breadcrumbs/hooks/pre-compact.sh"
       }]
     }],
     "SessionStart": [{
       "matcher": "compact|resume",
       "hooks": [{
         "type": "command",
-        "command": "bash ~/.claude/plugins/local/breadcrumbs/hooks/session-start.sh",
-        "timeout": 10
+        "command": "bash ~/.claude/plugins/local/breadcrumbs/hooks/session-start.sh"
       }]
     }]
   }
 }
 EOF
-echo ""
-echo "Or for global hooks, add to ~/.claude/settings.json"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "OPTIONAL: Create .breadcrumbs.yaml in your project root"
